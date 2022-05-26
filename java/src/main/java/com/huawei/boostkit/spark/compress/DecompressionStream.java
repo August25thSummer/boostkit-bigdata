@@ -7,7 +7,7 @@ public class DecompressionStream extends InputStream {
     public static final int HEADER_SIZE = 3;
     public static final int UNCOMPRESSED_LENGTH = 64 * 1024;
 
-    protected int compressBlockSizze = 64 * 1024;
+    protected int compressBlockSize = 64 * 1024;
     private boolean finishedReading = false;
     protected final InputStream in;
     private byte[] compressed;      // 临时原始压缩数据
@@ -17,14 +17,14 @@ public class DecompressionStream extends InputStream {
 
     private final CompressionCodec codec;
 
-    public DecompressionStream(InputStream in, CompressionCodec codec, int compressBlockSizze) throws IOException{
-        this.compressBlockSizze = compressBlockSizze;
+    public DecompressionStream(InputStream in, CompressionCodec codec, int compressBlockSize) throws IOException {
+        this.compressBlockSize = compressBlockSize;
         this.in = in;
         this.codec = codec;
         this.readHeader();
     }
 
-    @Override
+
     public void close() throws IOException {
             this.compressed = null;
             this.uncompressed = null;
@@ -33,9 +33,9 @@ public class DecompressionStream extends InputStream {
             }
     }
 
-    private void readHeader() throws IOException{
+    protected void readHeader() throws IOException {
         int[] b = new int[3];
-        for (int i = 0; i < HEADER_SIZE; i++){
+        for (int i = 0; i < HEADER_SIZE; i++) {
             int ret = in.read();
             if (ret == -1){
                 finishedReading = true;
@@ -51,7 +51,7 @@ public class DecompressionStream extends InputStream {
         // read the entire input data to the buffer
         compressed = new byte[chunkLength]; // 8K
         int readBytes = 0;
-        while (readBytes < chunkLength){
+        while (readBytes < chunkLength) {
             int ret = in.read(compressed, readBytes, chunkLength - readBytes);
             if (ret == -1){
                 finishedReading = true;
@@ -59,7 +59,7 @@ public class DecompressionStream extends InputStream {
             }
             readBytes += ret;
         }
-        if(readBytes < chunkLength){
+        if(readBytes < chunkLength) {
             throw new IOException("failed to read chunk!");
         }
         if (isOriginal) {
@@ -67,15 +67,15 @@ public class DecompressionStream extends InputStream {
             uncompressedLimit = chunkLength;
             return;
         }
-        if (uncompressed == null || UNCOMPRESSED_LENGTH > uncompressed.length){
+        if (uncompressed == null || UNCOMPRESSED_LENGTH > uncompressed.length) {
             uncompressed = new byte[UNCOMPRESSED_LENGTH];
         }
         int actualUncompressedLength = codec.decompress(compressed, chunkLength, uncompressed);
         uncompressedLimit = actualUncompressedLength;
     }
 
-    public int read(byte[] data, int offset, int length) throws IOException{
-        if (!ensureUncompressed()){
+    public int read(byte[] data, int offset, int length) throws IOException {
+        if (!ensureUncompressed()) {
             return -1;
         }
         int actualLength = Math.min(length, uncompressedLimit - uncompressedCursor);
@@ -84,8 +84,8 @@ public class DecompressionStream extends InputStream {
         return actualLength;
     }
 
-    public int read() throws IOException{
-        if (!ensureUncompressed()){
+    public int read() throws IOException {
+        if (!ensureUncompressed()) {
             return -1;
         }
         int data = 0xff & uncompressed[uncompressedCursor];
@@ -93,8 +93,8 @@ public class DecompressionStream extends InputStream {
         return data;
     }
 
-    private boolean ensureUncompressed() throws IOException{
-        while (uncompressed  == null || (uncompressedLimit - uncompressedCursor) == 0 ){
+    private boolean ensureUncompressed() throws IOException {
+        while (uncompressed  == null || (uncompressedLimit - uncompressedCursor) == 0 ) {
             if (finishedReading){
                 return false;
             }
@@ -103,8 +103,8 @@ public class DecompressionStream extends InputStream {
         return true;
     }
 
-    public int availaable() throws IOException{
-        if(!ensureUncompressed()){
+    public int available() throws IOException {
+        if(!ensureUncompressed()) {
             return 0;
         }
         return uncompressedLimit - uncompressedCursor;

@@ -17,42 +17,42 @@ import nova.hetu.omniruntime.utils.NativeLog;
  * @since 2021.08
  */
 
-public class NativelLoader {
+public class NativeLoader {
 
-    private static volatile NativelLoader INSTANCE;
+    private static volatile NativeLoader INSTANCE;
     private static final String LIBRARY_NAME = "spark_columnar_plugin";
-    private static final Logger LOG = LoggerFactory.getLogger(NativelLoader.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NativeLoader.class);
     private static final int BUFFER_SIZE = 1024;
 
-    public static NativelLoader getInstance(){
+    public static NativeLoader getInstance() {
         if (INSTANCE == null){
-            synchronized (NativelLoader.class){
+            synchronized (NativeLoader.class) {
                 if (INSTANCE == null){
-                    INSTANCE = new NativelLoader();
+                    INSTANCE = new NativeLoader();
                 }
             }
         }
         return INSTANCE;
     }
 
-    private NativelLoader(){
+    private NativeLoader() {
         try {
             String nativeLibraryPath = File.separator +
                     System.mapLibraryName(LIBRARY_NAME);
-            InputStream in = NativelLoader.class.getResourceAsStream(nativeLibraryPath);
+            InputStream in = NativeLoader.class.getResourceAsStream(nativeLibraryPath);
             File tempFile = File.createTempFile(LIBRARY_NAME, ".so");
             FileOutputStream fos = new FileOutputStream(tempFile);
             int i;
             byte[] buf = new byte[BUFFER_SIZE];
-            while ((i = in.read(buf)) != -1){
+            while ((i = in.read(buf)) != -1) {
                 fos.write(buf, 0, i);
             }
             in.close();
             fos.close();
             System.load(tempFile.getAbsolutePath());
-            NativelLoader.getInstance();
+            NativeLog.getInstance();
             tempFile.deleteOnExit();
-        }catch (IOException e){
+        }catch (IOException e) {
             LOG.warn("fail to load library from Jar!errmsg:{}",e.getMessage());
             System.loadLibrary(LIBRARY_NAME);
         }

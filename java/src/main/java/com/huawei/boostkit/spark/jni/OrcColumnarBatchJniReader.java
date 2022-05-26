@@ -36,19 +36,19 @@ public class OrcColumnarBatchJniReader {
     public int[] colsToGet;
     public int realColsCnt;
 
-    public OrcColumnarBatchJniReader(){
-        NativelLoader.getINSTANCE();
+    public OrcColumnarBatchJniReader() {
+        NativeLoader.getInstance();
     }
 
-    public JSONObject getSubJson (ExpressionTree etNode){
+    public JSONObject getSubJson (ExpressionTree etNode) {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("op", etNode.getOperator().ordinal());
-        if(etNode.getOperator().toString().equals("LEAF")){
+        if(etNode.getOperator().toString().equals("LEAF")) {
             jsonObject.put("leaf", etNode.toString());
             return jsonObject;
         }
         ArrayList<JSONObject> child = new ArrayList<JSONObject>();
-        for (ExpressionTree childNode : etNode.getChildren()){
+        for (ExpressionTree childNode : etNode.getChildren()) {
             JSONObject rtnJson = getSubJson(childNode);
             child.add(rtnJson);
         }
@@ -58,40 +58,40 @@ public class OrcColumnarBatchJniReader {
 
     public JSONObject getLeavesJson(List<PredicateLeaf> leaves, TypeDescription schema){
         JSONObject jsonObjectList = new JSONObject();
-        for (int i = 0; i < leaves.size(); i++){
-            PredicateLeaf p1 = leaves.get(i);
+        for (int i = 0; i < leaves.size(); i++) {
+            PredicateLeaf pl = leaves.get(i);
             JSONObject jsonObject = new JSONObject;
-            jsonObject.put("op", p1.getOperator().ordinal());
-            jsonObject.put("name", p1.getColumnName());
-            jsonObject.put("type", p1.getType().ordinal());
-            if(p1.getLiteral() != null){
-                if (p1.getType() == PredicateLeaf.Type.DATE){
+            jsonObject.put("op", pl.getOperator().ordinal());
+            jsonObject.put("name", pl.getColumnName());
+            jsonObject.put("type", pl.getType().ordinal());
+            if(pl.getLiteral() != null){
+                if (pl.getType() == PredicateLeaf.Type.DATE) {
                     jsonObject.put("literal",((int)Math.ceil(((Date).getLiteral()).getTime()* 1.0/3600/24/1000)) + "");
-                } else if (p1.getType() == PredicateLeaf.Type.DECIMAL){
-                    int decimalP =  schema.findSubtype(p1.getColumnName()).getPrecsion();
-                    int decimalS =  schema.findSubtype(p1.getColumnName()).getScale();
-                    jsonObject.put("literal", p1.getLiteral().toString() + " " + decimalP + " " + decimalS);
+                } else if (pl.getType() == PredicateLeaf.Type.DECIMAL) {
+                    int decimalP =  schema.findSubtype(pl.getColumnName()).getPrecsion();
+                    int decimalS =  schema.findSubtype(pl.getColumnName()).getScale();
+                    jsonObject.put("literal", pl.getLiteral().toString() + " " + decimalP + " " + decimalS);
                 } else {
-                    jsonObject.put("literal", p1.getLiteral().toString());
+                    jsonObject.put("literal", pl.getLiteral().toString());
                 }
             } else {
                 jsonObject.put("literal", "");
             }
-            if((p1.getLiteralList() != null) && (p1.getLiteralList().size() != 0)){
-                ArrayList<String> lst = new ArrayList<String>();
-                for (Object ob : p1.getLiteralList){
-                    if (p1.getType() == PredicateLeaf.Type.DECIMAL){
-                        int decimalP =  schema.findSubtype(p1.getColumnName()).getPrecsion();
-                        int decimalS =  schema.findSubtype(p1.getColumnName()).getScale();
+            if((pl.getLiteralList() != null) && (pl.getLiteralList().size() != 0)){
+                List<String> lst = new ArrayList<String>();
+                for (Object ob : pl.getLiteralList()) {
+                    if (pl.getType() == PredicateLeaf.Type.DECIMAL) {
+                        int decimalP =  schema.findSubtype(pl.getColumnName()).getPrecsion();
+                        int decimalS =  schema.findSubtype(pl.getColumnName()).getScale();
                         lst.add(ob.toString() + " " + decimalP + " " + decimalS);
-                    }else if (p1.getType() == PrediateLeaf.Type.Date){
-                        lst.add(((int)Math.ceil(((Date).getLiteral()).getTime()* 1.0/3600/24/1000)) + "");
-                    }else {
+                    } else if (pl.getType() == PrediateLeaf.Type.DATE) {
+                        lst.add(((int)Math.ceil(((Date)pl.getLiteral()).getTime()* 1.0/3600/24/1000)) + "");
+                    } else {
                         lst.add(ob.toString());
                     }
                 }
                 jsonObject.put("literalList", lst);
-            }else {
+            } else {
                 jsonObject.put("literalList", new ArrayList<String>());
             }
             jsonObjectList.put("leaf-" + i, jsonObject);
@@ -106,14 +106,14 @@ public class OrcColumnarBatchJniReader {
      * @param options split file options
      */
     public long initializeReaderJava(String path, ReaderOptions options) {
-        JSONObjecct job = new JSONObjecct();
-        if(options.getOrcTail() == null){
+        JSONObject job = new JSONObject();
+        if(options.getOrcTail() == null) {
             job.put("serializedTail", "");
-        }else {
+        } else {
             job.put("serializedTail", options.getOrTail().getSerializedTail().toString());
         }
         job.put("tailLocation", 9223372036854775807L);
-        reader = initializeReaderJava(path, job);
+        reader = initializeReader(path, job);
         return reader;
     }
 
@@ -123,15 +123,15 @@ public class OrcColumnarBatchJniReader {
      */
     public long initializeRecordReaderJava(Options options){
         JSONObject job = new JSONObject();
-        if(options.getInClude() == null){
+        if(options.getInclude() == null) {
             job.put("include", "");
         }else {
             job.put("include", options.getInclude().toString());
         }
         job.put("offset", options.getOffset());
         job.put("length", options.getLength());
-        if (options.getSearchArgument() != null){
-            LOGGER.debug("SearchArgument:" + options.getSearhArgument().toString());
+        if (options.getSearchArgument() != null) {
+            LOGGER.debug("SearchArgument:" + options.getSearchArgument().toString());
             JSONObject jsonexpressionTree = getSubJson(options.getSearchArgument().getExpression());
             job.put("expressionTree", jsonexpressionTree);
             JSONObject jsonleaves = getLeavesJson(options.getSearchArgument().getLeaves(), options.getSchema());
@@ -139,91 +139,91 @@ public class OrcColumnarBatchJniReader {
         }
 
         List<String> allCols;
-        if (options.getColumnNames() == null){
+        if (options.getColumnNames() == null) {
             allCols = Arrays.asList(getAllColumnNames(reader));
-        }else {
+        } else {
             allCols = Arrays.asList(options.getColumnNames());
         }
         ArrayList<String> colToInclu = new ArrayList<String>();
         List<String> optionField = options.getSchema().getFieldNames();
         colsToGet = new int[optionField.size()];
         realColsCnt = 0;
-        for (int i=0; i < optionField.size(); i++){
+        for (int i=0; i < optionField.size(); i++) {
             if (allCols.contains(optionField.get(i))){
                 colToInclu.add(optionField.get(i));
                 colsToGet[i] = 0;
                 realColsCnt++;
-            }else {
+            } else {
                 colsToGet[i] = -1;
             }
         }
         job.put("includedColumns", colToInclu.toArray());
-        recordReader = initializeRecordReader(recordReader, batchReader);
+        recordReader = initializeRecordReader(reader, job);
         return recordReader;
     }
 
-    public long initBatchJava(long batchSize){
+    public long initBatchJava(long batchSize) {
         batchReader = initializeBatch(recordReader, batchSize);
         return 0;
     }
 
-    public long getNumberOfRowsJava(){
+    public long getNumberOfRowsJava() {
         return getNumberOfRows(recordReader, batchReader);
     }
 
-    public long getRowNumber(){
+    public long getRowNumber() {
         return recordReaderGetRowNumber(recordReader);
     }
 
-    public float getProgress(){
+    public float getProgress() {
         return recordReaderGetProgress(recordReader);
     }
 
-    public void close(){
+    public void close() {
         recordReaderClose(recordReader, reader, batchReader);
     }
 
-    public void seekToRow(long rowNumber){
+    public void seekToRow(long rowNumber) {
         recordReaderSeekToRow(recordReader,rowNumber);
     }
 
-    public int next(Vec[] vecList){
+    public int next(Vec[] vecList) {
         int vectorCnt = vecList.length;
         int[] typeIds = new int[realColsCnt];
         long[] vecNativeIds = new long[realColsCnt];
         long rtn = recordReaderNext(recordReader, reader, batchReader, typeIds, vecNativeIds);
-        if (rtn == 0){
+        if (rtn == 0) {
             return 0;
         }
         int nativeGetId = 0;
-        for (int i = 0; i < vectorCnt; i++){
-            if (colsToGet[i] != 0){
+        for (int i = 0; i < vectorCnt; i++) {
+            if (colsToGet[i] != 0) {
                 continue;
             }
-            switch (DataType.DataTypeId.values()[typeIds[nativeGetId]]){
+            switch (DataType.DataTypeId.values()[typeIds[nativeGetId]]) {
                 case OMNI_DATE32:
-                case OMNI_INT:{
+                case OMNI_INT: {
                     vecList[i] = new IntVec(vecNativeIds[nativeGetId]);
                     break;
                 }
-                case OMNI_LONG:{
+                case OMNI_LONG: {
                     vecList[i] = new LongVec(vecNativeIds[nativeGetId]);
                     break;
                 }
-                case OMNI_VARCHAR:{
+                case OMNI_VARCHAR: {
                     vecList[i] = new VarcharVec(vecNativeIds[nativeGetId]);
                     break;
                 }
-                case OMNI_DECIMAL128:{
-                    vecList[i] = new Decimal128Vec(vecNativeIds[nativeGetId]);
+                case OMNI_DECIMAL128: {
+                    vecList[i] = new Decimal128Vec(vecNativeIds[nativeGetId], Decimal128DataType.DECIMAL128);
                     break;
                 }
-                case OMNI_DECIMAL64:{
+                case OMNI_DECIMAL64: {
                     vecList[i] = new LongVec(vecNativeIds[nativeGetId]);
                     break;
                 }
-                default:{
-                    LOGGER.error("UNKNIWN TYPE ERROR IN JAVA" + DataType.DataTypeId.values()[typeIds[i]]);
+                default: {
+                    LOGGER.error("UNKNWN TYPE ERROR IN JAVA" + DataType.DataTypeId.values()[typeIds[i]]);
                 }
             }
             nativeGetId++;

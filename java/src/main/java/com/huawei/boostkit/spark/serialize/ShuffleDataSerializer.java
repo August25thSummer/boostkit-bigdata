@@ -24,8 +24,8 @@ import org.apache.spark.sql.vectorized.ColumnarBatch;
 
 public class ShuffleDataSerializer {
 
-    public static ColumnarBatch deseriallize(byte[] bytes){
-        try{
+    public static ColumnarBatch deserialize(byte[] bytes) {
+        try {
             VecData.VecBatch vecBatch = VecData.VecBatch.parseFrom(bytes);
             int vecCount = vecBatch.getVecCnt();
             int rowCount = vecBatch.getRowCnt();
@@ -34,8 +34,8 @@ public class ShuffleDataSerializer {
                 vecs[i] = buildVec(vecBatch.getVecs(i), rowCount);
             }
             return new ColumnarBatch(vecs, rowCount);
-        }catch (InvalidProtocolBufferException e){
-            throw new RuntimeException("deserialize failed.errmsg:" + e.getMessage());
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException("deserialize failed. errmsg:" + e.getMessage());
         }
     }
 
@@ -43,13 +43,13 @@ public class ShuffleDataSerializer {
         VecData.VecType protoTypeId = protoVec.getVecType();
         Vec vec;
         DataType type;
-        switch (protoTypeId.getTypeId()){
+        switch (protoTypeId.getTypeId()) {
             case VEC_TYPE_INT:
                 type = DataTypes.IntegerType;
                 vec = new IntVec(vecSize);
                 break;
             case VEC_TYPE_DATE32:
-                type = DataTypes.DataType;
+                type = DataTypes.DateType;
                 vec = new IntVec(vecSize);
                 break;
             case VEC_TYPE_LONG:
@@ -61,7 +61,7 @@ public class ShuffleDataSerializer {
                 vec = new LongVec(vecSize);
                 break;
             case VEC_TYPE_DECIMAL64:
-                type = DataTypes.createDecimalType(protoTypeId.getPreision(), protoTypeId.getScale());
+                type = DataTypes.createDecimalType(protoTypeId.getPrecision(), protoTypeId.getScale());
                 vec = new LongVec(vecSize);
                 break;
             case VEC_TYPE_SHORT:
@@ -80,12 +80,12 @@ public class ShuffleDataSerializer {
             case VEC_TYPE_CHAR:
                 type = DataTypes.StringType;
                 vec = new VarcharVec(protoVec.getValues().size(), vecSize);
-                if (vec instanceof VarcharVec){
-                    ((VarcharVec) vec).setOffsetBuf(protoVec.getOffset().toByteArray());
+                if (vec instanceof VarcharVec) {
+                    ((VarcharVec) vec).setOffsetsBuf(protoVec.getOffset().toByteArray());
                 }
                 break;
-            case VEC_TYPE_DECIMAL128：
-                type = DataTypes.createDecimalType(protoTypeId.getPrecision(), protoTypeId.getSale());
+            case VEC_TYPE_DECIMAL128:
+                type = DataTypes.createDecimalType(protoTypeId.getPrecision(), protoTypeId.getScale());
                 vec = new Decimal128Vec(vecSize);
                 break;
             case VEC_TYPE_TIME32:

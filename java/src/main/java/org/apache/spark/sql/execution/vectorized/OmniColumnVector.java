@@ -18,16 +18,16 @@ import java.util.Arrays;
 /**
  * OmniColumnVector
  */
-public class OmniColumnVector extends WritableColumnVetor{
+public class OmniColumnVector extends WritableColumnVector {
     private static final boolean BIG_ENDIAN_PLATFORM = ByteOrder.nativeOrder().equals(ByteOrder.BIG_ENDIAN);
 
     /**
-     * Allocates columns to store elements of each field of the schema heap.
+     * Allocates columns to store elements of each field of the schema on heap.
      * Capacity is the initial capacity of the vector and it will grow as necessary.
      * Capacity is in number of elements, not number of bytes.
      */
-    public static OmniColumnVector[] allocateColumns(int capacity, StructType schema, boolean initVec){
-        return allocateColumns(capacity, schema, initVec);
+    public static OmniColumnVector[] allocateColumns(int capacity, StructType schema, boolean initVec) {
+        return allocateColumns(capacity, schema.fields(), initVec);
     }
 
     /**
@@ -35,10 +35,10 @@ public class OmniColumnVector extends WritableColumnVetor{
      * initial capacity of the vector and it will grow as necessary. Capacity is in
      * number of elements, not number of bytes.
      */
-    public static OmniColumnVector[] allocateColumns(int capacity, StructField[] fields, boolean initVec){
+    public static OmniColumnVector[] allocateColumns(int capacity, StructField[] fields, boolean initVec) {
         OmniColumnVector[] vectors = new OmniColumnVector[fields.length];
-        for (int i = 0; i < fields.length; i++){
-            vectors[i] = new OmniColumnVector(capacity, fields[i], initVec);
+        for (int i = 0; i < fields.length; i++) {
+            vectors[i] = new OmniColumnVector(capacity, fields[i].dataType(), initVec);
         }
         return vectors;
     }
@@ -60,10 +60,10 @@ public class OmniColumnVector extends WritableColumnVetor{
     // init vec
     private boolean initVec;
 
-    public OmniColumnVector(int capacity, DataType type, boolean initVec){
+    public OmniColumnVector(int capacity, DataType type, boolean initVec) {
         super(capacity, type);
         this.initVec = initVec;
-        if (this.initVec){
+        if (this.initVec) {
             reserveInternal(capacity);
         }
         reset();
@@ -72,256 +72,257 @@ public class OmniColumnVector extends WritableColumnVetor{
     /**
      * get vec
      *
-     * @return
+     * @return Vec
      */
-    public Vec getVec(){
-        if (dictionaryData != null){
+    public Vec getVec() {
+        if (dictionaryData != null) {
             return dictionaryData;
         }
 
-        if (type instanceof LongType){
+        if (type instanceof LongType) {
             return longDataVec;
-        }else if (type instanceof BooleanType){
+        } else if (type instanceof BooleanType) {
             return booleanDataVec;
-        }else if (type instanceof ShortType){
+        } else if (type instanceof ShortType) {
             return shortDataVec;
-        }else if (type instanceof IntegerType){
+        } else if (type instanceof IntegerType) {
             return intDataVec;
-        }else if (type instanceof DecimalType){
-            if (DecimalType.is64BitDecimalType(type)){
+        } else if (type instanceof DecimalType) {
+            if (DecimalType.is64BitDecimalType(type)) {
                 return longDataVec;
-            }else {
+            } else {
                 return decimal128DataVec;
             }
-        }else if (type instanceof DoubleType){
+        } else if (type instanceof DoubleType) {
             return doubleDataVec;
-        }else if (type instanceof StringType){
+        } else if (type instanceof StringType) {
             return charsTypeDataVec;
-        }else if (type instanceof DateType){
+        } else if (type instanceof DateType) {
             return intDataVec;
-        }else if (type instanceof ByteType){
+        } else if (type instanceof ByteType) {
             return charsTypeDataVec;
-        }else {
+        } else {
             return null;
         }
     }
 
     /**
-     * set vec
+     * set Vec
      *
      * @param vec Vec
      */
-    public void setVec(Vec vec){
-        if (dictionaryData != null){
+    public void setVec(Vec vec) {
+        if (vec instanceof DictionaryVec) {
             dictionaryData = (DictionaryVec) vec;
-        }else if (type instanceof LongType){
+        } else if (type instanceof LongType) {
             this.longDataVec = (LongVec) vec;
-        }else if (type instanceof DecimalType){
-            if (DecimalType.is64BitDecimalType(type)){
+        } else if (type instanceof DecimalType) {
+            if (DecimalType.is64BitDecimalType(type)) {
                 this.longDataVec = (LongVec) vec;
-            }else {
+            } else {
                 this.decimal128DataVec = (Decimal128Vec) vec;
             }
-        }else if (type instanceof BooleanType){
+        } else if (type instanceof BooleanType) {
             this.booleanDataVec = (BooleanVec) vec;
-        }else if (type instanceof ShortType){
+        } else if (type instanceof ShortType) {
             this.shortDataVec = (ShortVec) vec;
-        }else if (type instanceof IntegerType){
+        } else if (type instanceof IntegerType) {
             this.intDataVec = (IntVec) vec;
-        }else if (type instanceof DoubleType){
+        } else if (type instanceof DoubleType) {
             this.doubleDataVec = (DoubleVec) vec;
-        }else if (type instanceof StringType){
+        } else if (type instanceof StringType) {
             this.charsTypeDataVec = (VarcharVec) vec;
-        }else if (type instanceof DateType){
+        } else if (type instanceof DateType)
             this.intDataVec = (IntVec) vec;
-        }else if (type instanceof ByteType){
+        } else if (type instanceof ByteType) {
             this.charsTypeDataVec = (VarcharVec) vec;
-        }else {
+        } else {
             return;
         }
     }
 
     @Override
-    public void close(){
+    public void close() {
         super.close();
-        if (booleanDataVec != null){
+        if (booleanDataVec != null) {
             booleanDataVec.close();
         }
-        if (shortDataVec != null){
+        if (shortDataVec != null) {
             shortDataVec.close();
         }
-        if (intDataVec != null){
+        if (intDataVec != null) {
             intDataVec.close();
         }
-        if (longDataVec != null){
+        if (longDataVec != null) {
             longDataVec.close();
         }
-        if (doubleDataVec != null){
+        if (doubleDataVec != null) {
             doubleDataVec.close();
         }
-        if (decimal128DataVec != null){
+        if (decimal128DataVec != null) {
             decimal128DataVec.close();
         }
         if (charsTypeDataVec != null) {
             charsTypeDataVec.close();
         }
-        if (dictionaryData != null){
+        if (dictionaryData != null) {
             dictionaryData.close();
             dictionaryData = null;
         }
     }
 
     //
-    // APIs dealiing with nulls
+    // APIs dealing with nulls
     //
 
     @Override
-    public boolean hasNull(){
+    public boolean hasNull() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int numNulls(){
+    public int numNulls() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void putNotNull(int rowId){}
+    public void putNotNull(int rowId) {}
 
 
     @Override
-    public void putNull(int rowId){
-        if (dictionaryData != null){
+    public void putNull(int rowId) {
+        if (dictionaryData != null) {
             dictionaryData.setNull(rowId);
             return;
         }
-        if (type instanceof BooleanType){
+        if (type instanceof BooleanType) {
             booleanDataVec.setNull(rowId);
-        }else if (type instanceof ByteType){
+        } else if (type instanceof ByteType) {
             charsTypeDataVec.setNull(rowId);
-        }else if (type instanceof ShortType){
+        } else if (type instanceof ShortType) {
             shortDataVec.setNull(rowId);
-        }else if (type instanceof IntegerType){
+        } else if (type instanceof IntegerType) {
             intDataVec.setNull(rowId);
-        }else if (type instanceof DecimalType){
-            if (DecimalType.is64BitDecimalType(type)){
+        } else if (type instanceof DecimalType) {
+            if (DecimalType.is64BitDecimalType(type)) {
                 longDataVec.setNull(rowId);
-            }else {
+            } else {
                 decimal128DataVec.setNull(rowId);
             }
-        }else if (type instanceof LongType || DecimalType.is64BitDecimalType(type)){
+        } else if (type instanceof LongType || DecimalType.is64BitDecimalType(type)) {
             longDataVec.setNull(rowId);
-        }else if (type instanceof FloatType){
+        } else if (type instanceof FloatType) {
             return;
-        }else if (type instanceof DoubleType){
+        } else if (type instanceof DoubleType) {
             doubleDataVec.setNull(rowId);
-        }else if (type instanceof StringType){
+        } else if (type instanceof StringType) {
             charsTypeDataVec.setNull(rowId);
-        }else if (type instanceof DateType){
+        } else if (type instanceof DateType) {
             intDataVec.setNull(rowId);
         }
     }
 
     @Override
-    public void putNulls(int rowId, int count){
+    public void putNulls(int rowId, int count) {
         boolean[] nullValue = new boolean[count];
-        if (dictionaryData != null){
+        Arrays.fill(nullValue, true);
+        if (dictionaryData != null) {
             dictionaryData.setNulls(rowId, nullValue, 0, count);
             return;
         }
-        if (type instanceof BooleanType){
+        if (type instanceof BooleanType) {
             booleanDataVec.setNulls(rowId, nullValue, 0, count);
-        }else if (type instanceof ByteType){
+        } else if (type instanceof ByteType) {
             charsTypeDataVec.setNulls(rowId, nullValue, 0, count);
-        }else if (type instanceof ShortType){
+        } else if (type instanceof ShortType) {
             shortDataVec.setNulls(rowId, nullValue, 0, count);
-        }else if (type instanceof IntegerType){
+        } else if (type instanceof IntegerType) {
             intDataVec.setNulls(rowId, nullValue, 0, count);
-        }else if (type instanceof DecimalType){
-            if (DecimalType.is64BitDecimalType(type)){
+        } else if (type instanceof DecimalType) {
+            if (DecimalType.is64BitDecimalType(type)) {
                 longDataVec.setNulls(rowId, nullValue, 0, count);
-            }else {
+            } else {
                 decimal128DataVec.setNulls(rowId, nullValue, 0, count);
             }
-        }else if (type instanceof LongType || DecimalType.is64BitDecimalType(type)){
+        } else if (type instanceof LongType || DecimalType.is64BitDecimalType(type)) {
             longDataVec.setNulls(rowId, nullValue, 0, count);
-        }else if (type instanceof FloatType){
+        } else if (type instanceof FloatType) {
             return;
-        }else if (type instanceof DoubleType){
+        } else if (type instanceof DoubleType) {
             doubleDataVec.setNulls(rowId, nullValue, 0, count);
-        }else if (type instanceof StringType){
+        } else if (type instanceof StringType) {
             charsTypeDataVec.setNulls(rowId, nullValue, 0, count);
-        }else if (type instanceof DateType){
+        } else if (type instanceof DateType) {
             intDataVec.setNulls(rowId, nullValue, 0, count);
         }
     }
 
     @Override
-    public void putNotNulls(int rowId, int count){};
+    public void putNotNulls(int rowId, int count) {}
 
     @Override
-    public boolean isNullAt(int rowId){
-        if (dictionaryData != null){
+    public boolean isNullAt(int rowId) {
+        if (dictionaryData != null) {
             return dictionaryData.isNull(rowId);
         }
-        if (type instanceof BooleanType){
+        if (type instanceof BooleanType) {
             return booleanDataVec.isNull(rowId);
-        }else if (type instanceof ByteType){
+        } else if (type instanceof ByteType) {
             return charsTypeDataVec.isNull(rowId);
-        }else if (type instanceof ShortType){
+        } else if (type instanceof ShortType) {
             return shortDataVec.isNull(rowId);
-        }else if (type instanceof IntegerType){
+        } else if (type instanceof IntegerType) {
             return intDataVec.isNull(rowId);
-        }else if (type instanceof DecimalType){
-            if (DecimalType.is64BitDecimalType(type)){
+        } else if (type instanceof DecimalType) {
+            if (DecimalType.is64BitDecimalType(type)) {
                 return longDataVec.isNull(rowId);
-            }else {
+            } else {
                 return decimal128DataVec.isNull(rowId);
             }
-        }else if (type instanceof LongType || DecimalType.is64BitDecimalType(type)){
+        } else if (type instanceof LongType || DecimalType.is64BitDecimalType(type)) {
             return longDataVec.isNull(rowId);
-        }else if (type instanceof FloatType){
-            return;
-        }else if (type instanceof DoubleType){
+        } else if (type instanceof FloatType) {
+            return false;
+        } else if (type instanceof DoubleType) {
             return doubleDataVec.isNull(rowId);
-        }else if (type instanceof StringType){
+        } else if (type instanceof StringType) {
             return charsTypeDataVec.isNull(rowId);
-        }else if (type instanceof DateType){
+        } else if (type instanceof DateType) {
             return intDataVec.isNull(rowId);
-        }else {
+        } else {
             throw new RuntimeException("unknown type for " + rowId);
         }
     }
 
     //
-    // APIs dealing with booleans
+    // APIs dealing with Booleans
     //
 
     @Override
-    public void putBoolean(int rowId, boolean value){
+    public void putBoolean(int rowId, boolean value) {
         booleanDataVec.set(rowId, value);
     }
 
     @Override
-    public void putBooleans(int rowId, int count, boolean value){
-        for (int i = 0; i < count; ++i){
+    public void putBooleans(int rowId, int count, boolean value) {
+        for (int i = 0; i < count; ++i) {
             booleanDataVec.set(i + rowId, value);
         }
     }
 
     @Override
-    public boolean getBoolean(int rowId){
-        if (dictionaryData != null){
+    public boolean getBoolean(int rowId) {
+        if (dictionaryData != null) {
             return dictionaryData.getBoolean(rowId);
         }
         return booleanDataVec.get(rowId);
     }
 
     @Override
-    public boolean[] getBooleans(int rowId, int count){
-        assert (dictionaryData == null);
+    public boolean[] getBooleans(int rowId, int count) {
+        assert (dictionary == null);
         boolean[] array = new boolean[count];
-        for (int i = 0; i < count; i++){
+        for (int i = 0; i < count; ++i) {
             array[i] = booleanDataVec.get(rowId + i);
         }
         return array;
@@ -334,19 +335,19 @@ public class OmniColumnVector extends WritableColumnVetor{
     //
 
     @Override
-    public void putByte(int rowId, byte value){
+    public void putByte(int rowId, byte value) {
         charsTypeDataVec.set(rowId, new byte[]{value});
     }
 
     @Override
-    public void putBytes(int rowId, int count, byte value){
-        for (int i = 0; i < count; ++i){
+    public void putBytes(int rowId, int count, byte value) {
+        for (int i = 0; i < count; ++i) {
             charsTypeDataVec.set(rowId, new byte[]{value});
         }
     }
 
     @Override
-    public void putBytes(int rowId, int count, byte[] src, int srcIndex){
+    public void putBytes(int rowId, int count, byte[] src, int srcIndex) {
         byte[] array = new byte[count];
         System.arraycopy(src, srcIndex, array, 0, count);
         charsTypeDataVec.set(rowId, array);
@@ -359,8 +360,8 @@ public class OmniColumnVector extends WritableColumnVetor{
      * @param offset offset value
      * @return return count of elements
      */
-    public final int appendString(int length, byte[] src, int offset){
-        reserve(elementsAppend + 1);
+    public final int appendString(int length, byte[] src, int offset) {
+        reserve(elementsAppended + 1);
         int result = elementsAppended;
         putBytes(elementsAppended, length, src, offset);
         elementsAppended++;
@@ -371,7 +372,7 @@ public class OmniColumnVector extends WritableColumnVetor{
     public byte getByte(int rowId) {
         if (dictionary != null){
             return (byte) dictionary.decodeToInt(dictionaryIds.getDictId(rowId));
-        } else if (dictionaryData != null){
+        } else if (dictionaryData != null) {
             return dictionaryData.getBytes(rowId)[0];
         } else {
             return charsTypeDataVec.get(rowId)[0];
@@ -379,13 +380,13 @@ public class OmniColumnVector extends WritableColumnVetor{
     }
 
     @Override
-    public byte[] getBytes(int rowId, int count){
+    public byte[] getBytes(int rowId, int count) {
         assert (dictionary == null);
         byte[] array = new byte[count];
-        for (int i = 0; i < count; i++){
+        for (int i = 0; i < count; i++) {
             if (type instanceof StringType) {
                 array[i] = ((VarcharVec) ((OmniColumnVector) getChild(0)).getVec()).get(rowId + i)[0];
-            } else if (type instanceof ByteType){
+            } else if (type instanceof ByteType) {
                 array[i] = charsTypeDataVec.get(rowId + i)[0];
             } else {
                 throw new RuntimeException("Unsupported putShorts");
@@ -395,8 +396,8 @@ public class OmniColumnVector extends WritableColumnVetor{
     }
 
     @Override
-    public UTF8String getUTF8String(int rowId){
-        if (dictionaryData != null){
+    public UTF8String getUTF8String(int rowId) {
+        if (dictionaryData != null) {
             return UTF8String.fromBytes(dictionaryData.getBytes(rowId));
         } else {
             return UTF8String.fromBytes(charsTypeDataVec.get(rowId));
@@ -419,7 +420,7 @@ public class OmniColumnVector extends WritableColumnVetor{
 
     @Override
     public void putShorts(int rowId, int count, short value) {
-        for (int i = 0; i < count; ++i){
+        for (int i = 0; i < count; ++i) {
             shortDataVec.set(i + rowId, value);
         }
     }
@@ -436,9 +437,9 @@ public class OmniColumnVector extends WritableColumnVetor{
 
     @Override
     public short getShort(int rowId){
-        if (dictionary != null){
+        if (dictionary != null) {
             return (short) dictionary.decodeToInt(dictionaryIds.getDictId(rowId));
-        } else if (dictionaryData != null){
+        } else if (dictionaryData != null) {
             throw new UnsupportedOperationException("Unsupported to get short from dictionary vector");
         } else {
             return shortDataVec.get(rowId);
@@ -446,10 +447,10 @@ public class OmniColumnVector extends WritableColumnVetor{
     }
 
     @Override
-    public short[] getShorts(int rowId, int count){
+    public short[] getShorts(int rowId, int count) {
         assert (dictionary == null);
         short[] array = new short[count];
-        for (int i = 0; i < count; i++){
+        for (int i = 0; i < count; i++) {
             array[i] = shortDataVec.get(rowId + i);
         }
         return array;
@@ -465,8 +466,8 @@ public class OmniColumnVector extends WritableColumnVetor{
     }
 
     @Override
-    public void putInts(int rowId, int count, short value) {
-        for (int i = 0; i < count; ++i){
+    public void putInts(int rowId, int count, int value) {
+        for (int i = 0; i < count; ++i) {
             intDataVec.set(rowId + i, value);
         }
     }
@@ -493,10 +494,10 @@ public class OmniColumnVector extends WritableColumnVetor{
     }
 
     @Override
-    public short getInt(int rowId){
+    public int getInt(int rowId) {
         if (dictionary != null){
             return dictionary.decodeToInt(dictionaryIds.getDictId(rowId));
-        } else if (dictionaryData != null){
+        } else if (dictionaryData != null) {
             return dictionaryData.getInt(rowId);
         } else {
             return intDataVec.get(rowId);
@@ -504,10 +505,10 @@ public class OmniColumnVector extends WritableColumnVetor{
     }
 
     @Override
-    public int[] getInts(int rowId, int count){
+    public int[] getInts(int rowId, int count) {
         assert (dictionary == null);
         int[] array = new int[count];
-        for (int i = 0; i < count; i++){
+        for (int i = 0; i < count; i++) {
             array[i] = intDataVec.get(rowId + i);
         }
         return array;
@@ -528,14 +529,14 @@ public class OmniColumnVector extends WritableColumnVetor{
     //
 
     @Override
-    public void putLong(int rowId, int value) {
+    public void putLong(int rowId, long value) {
         longDataVec.set(rowId, value);
     }
 
     @Override
     public void putLongs(int rowId, int count, long value) {
-        for (int i = 0; i < count; ++i){
-            longDataVec.set(rowId + i, value);
+        for (int i = 0; i < count; ++i) {
+            longDataVec.set(i + rowId, value);
         }
     }
 
@@ -555,16 +556,16 @@ public class OmniColumnVector extends WritableColumnVetor{
         for (int i = 0; i < count; ++i, srcOffset += 8) {
             longDataVec.set(i + rowId, Platform.getLong(src, srcOffset));
             if (BIG_ENDIAN_PLATFORM) {
-                longDataVec.set(i + rowId, Long.reverseBytes(intDataVec.get(i + rowId)));
+                longDataVec.set(i + rowId, Long.reverseBytes(longDataVec.get(i + rowId)));
             }
         }
     }
 
     @Override
-    public long getLong(int rowId){
+    public long getLong(int rowId) {
         if (dictionary != null){
             return dictionary.decodeToLong(dictionaryIds.getDictId(rowId));
-        } else if (dictionaryData != null){
+        } else if (dictionaryData != null) {
             return dictionaryData.getLong(rowId);
         } else {
             return longDataVec.get(rowId);
@@ -572,10 +573,10 @@ public class OmniColumnVector extends WritableColumnVetor{
     }
 
     @Override
-    public long[] getLongs(int rowId, int count){
+    public long[] getLongs(int rowId, int count) {
         assert (dictionary == null);
         long[] array = new long[count];
-        for (int i = 0; i < count; i++){
+        for (int i = 0; i < count; i++) {
             array[i] = longDataVec.get(rowId + i);
         }
         return array;
@@ -591,7 +592,7 @@ public class OmniColumnVector extends WritableColumnVetor{
     }
 
     @Override
-    public void putFloat(int rowId, int count, float value) {
+    public void putFloats(int rowId, int count, float value) {
         throw new UnsupportedOperationException();
     }
 
@@ -606,17 +607,17 @@ public class OmniColumnVector extends WritableColumnVetor{
     }
 
     @Override
-    public void putFloatsLitteleEndian(int rowId, int count, byte[] src,int srcIndex) {
+    public void putFloatsLittleEndian(int rowId, int count, byte[] src,int srcIndex) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public float getFloat(int rowId){
+    public float getFloat(int rowId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public float[] getFloats(int rowId, int count){
+    public float[] getFloats(int rowId, int count) {
         throw new UnsupportedOperationException();
     }
 
@@ -625,13 +626,13 @@ public class OmniColumnVector extends WritableColumnVetor{
     //
 
     @Override
-    public void putDouble(int rowId, int value) {
+    public void putDouble(int rowId, double value) {
         doubleDataVec.set(rowId, value);
     }
 
     @Override
     public void putDoubles(int rowId, int count, double value) {
-        for (int i = 0; i < count; i++){
+        for (int i = 0; i < count; i++) {
             doubleDataVec.set(rowId + i, value);
         }
     }
@@ -659,10 +660,10 @@ public class OmniColumnVector extends WritableColumnVetor{
     }
 
     @Override
-    public double getDouble(int rowId){
-        if (dictionary != null){
+    public double getDouble(int rowId) {
+        if (dictionary != null) {
             return dictionary.decodeToDouble(dictionaryIds.getDictId(rowId));
-        } else if (dictionaryData != null){
+        } else if (dictionaryData != null) {
             return dictionaryData.getDouble(rowId);
         } else {
             return doubleDataVec.get(rowId);
@@ -670,10 +671,10 @@ public class OmniColumnVector extends WritableColumnVetor{
     }
 
     @Override
-    public double[] getDoubles(int rowId, int count){
+    public double[] getDoubles(int rowId, int count) {
         assert (dictionary == null);
         double[] array = new double[count];
-        for (int i = 0; i < count; i++){
+        for (int i = 0; i < count; i++) {
             array[i] = doubleDataVec.get(rowId + i);
         }
         return array;
@@ -684,12 +685,12 @@ public class OmniColumnVector extends WritableColumnVetor{
     //
 
     @Override
-    public int getArrayLength(int rowId){
+    public int getArrayLength(int rowId) {
         throw new RuntimeException("Unsupported getArrayLength");
     }
 
     @Override
-    public int getArrayOffset(int rowId){
+    public int getArrayOffset(int rowId) {
         throw new RuntimeException("Unsupported getArrayOffset");
     }
 
@@ -703,7 +704,7 @@ public class OmniColumnVector extends WritableColumnVetor{
     //
 
     @Override
-    public int putByteArray(int rowId, byte[] value, int offset, int length){
+    public int putByteArray(int rowId, byte[] value, int offset, int length) {
         throw new RuntimeException("Unsupported putByteArray");
     }
 
@@ -714,7 +715,7 @@ public class OmniColumnVector extends WritableColumnVetor{
      */
     public final int appendDecimal(Decimal value)
     {
-        reserve(elementsAppends + 1);
+        reserve(elementsAppended + 1);
         int result = elementsAppended;
         if (value.precision() <= Decimal.MAX_LONG_DIGITS()) {
             longDataVec.set(elementsAppended, value.toUnscaledLong());
@@ -727,7 +728,7 @@ public class OmniColumnVector extends WritableColumnVetor{
 
     @Override
     public void putDecimal(int rowId, Decimal value, int precision) {
-        if (precision < Decimal.MAX_LONG_DIGITS()){
+        if (precision <= Decimal.MAX_LONG_DIGITS()) {
             longDataVec.set(rowId, value.toUnscaledLong());
         } else {
             decimal128DataVec.setBigInteger(rowId, value.toJavaBigInteger());
@@ -735,9 +736,9 @@ public class OmniColumnVector extends WritableColumnVetor{
     }
 
     @Override
-    public Decimal getDecimal(int rowId, int precision, int scale){
-        if (isNullAt(precision)) return null;
-        if (precision <= Decimal.MAX_LONG_DIGITS()){
+    public Decimal getDecimal(int rowId, int precision, int scale) {
+        if (isNullAt(rowId)) return null;
+        if (precision <= Decimal.MAX_LONG_DIGITS()) {
             return Decimal.apply(getLong(rowId), precision, scale);
         } else {
             return Decimal.apply(new BigDecimal(decimal128DataVec.getBigInteger(rowId), scale), precision, scale);
@@ -761,7 +762,7 @@ public class OmniColumnVector extends WritableColumnVetor{
         } else if (type instanceof IntegerType) {
             intDataVec = new IntVec(newCapacity);
         } else if (type instanceof DecimalType) {
-            if (DecimalType.is64BitDecimalType(type)){
+            if (DecimalType.is64BitDecimalType(type)) {
                 longDataVec = new LongVec(newCapacity);
             } else {
                 decimal128DataVec = new Decimal128Vec(newCapacity);
@@ -775,7 +776,7 @@ public class OmniColumnVector extends WritableColumnVetor{
         } else if (type instanceof StringType){
             // need to set with real column size, suppose char(200) utf8
             charsTypeDataVec = new VarcharVec(newCapacity * 4 * 200, newCapacity);
-        } else if (type instanceof DataType) {
+        } else if (type instanceof DateType) {
             intDataVec = new IntVec(newCapacity);
         } else {
             throw new RuntimeException("Unhandled " + type);

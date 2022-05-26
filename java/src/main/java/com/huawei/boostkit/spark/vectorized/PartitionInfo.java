@@ -16,20 +16,20 @@ public class PartitionInfo implements Serializable {
     private final String inputTypes;
 
     /**
-     * Init partitionInfo
+     * Init PartitionInfo
      *
      * @param partitionName Partitioning name. "single" for SinglePartitioning, "rr" for
-     *      RoundRobinPartitioning, "hash" for HashPartitioning, "range" for RangePartitioning
+     *     RoundRobinPartitioning, "hash" for HashPartitioning, "range" for RangePartitioning
      * @param partitionNum partition number
      */
-    public PartitionInfo(String partitionName, int partitionNum, int numCols, String inputTypes){
+    public PartitionInfo(String partitionName, int partitionNum, int numCols, String inputTypes) {
         this.partitionName = partitionName;
         this.partitionNum = partitionNum;
         this.numCols = numCols;
         this.inputTypes = inputTypes;
     }
 
-    public String getPartitionName(){
+    public String getPartitionName() {
         return partitionName;
     }
 

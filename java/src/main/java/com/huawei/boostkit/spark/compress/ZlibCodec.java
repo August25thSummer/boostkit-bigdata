@@ -1,17 +1,17 @@
 /**
- * Licensed to the Apache Software Foundation (AST) under one
- * or more contributor license agreements. See the NOTICE file
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
- * regarding copyright ownership. The ASF license this file
- * to you under the Apache License, Version 2.0 (thr
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -30,19 +30,19 @@ public class ZlibCodec implements CompressionCodec {
     private int level;
     private int strategy;
 
-    public ZlibCodec(){
+    private ZlibCodec() {
         level = Deflater.DEFAULT_COMPRESSION;
         strategy = Deflater.DEFAULT_STRATEGY;
     }
 
-    public ZlibCodec(int level, int strategy){
+    public ZlibCodec(int level, int strategy) {
         this.level = level;
         this.strategy = strategy;
     }
 
     @Override
     public boolean compress(ByteBuffer in, ByteBuffer out,
-                            ByteBuffer overflow) throws IOException{
+                            ByteBuffer overflow) throws IOException {
         int length = in.remaining();
         int outSize = 0;
         Deflater deflater = new Deflater(level, true);
@@ -51,14 +51,14 @@ public class ZlibCodec implements CompressionCodec {
             deflater.setInput(in.array(), in.arrayOffset() + in.position(), length);
             deflater.finish();
             int offset = out.arrayOffset() + out.position();
-            while (!deflater.finished() && (length > outSize)){
+            while (!deflater.finished() && (length > outSize)) {
                 int size = deflater.deflate(out.array(), offset, out.remaining());
                 out.position(size + out.position());
                 outSize += size;
                 offset += size;
                 // if we run out of space in the out buffer, use the overflow
-                if (out.remaining() == 0){
-                    if (overflow == null){
+                if (out.remaining() == 0) {
+                    if (overflow == null) {
                         return false;
                     }
                     out = overflow;
@@ -72,18 +72,18 @@ public class ZlibCodec implements CompressionCodec {
     }
 
     @Override
-    public int decompress(byte[] input, int inputLength, byte[] output) throws IOException{
+    public int decompress(byte[] input, int inputLength, byte[] output) throws IOException {
         Inflater inflater = new Inflater(true);
         int offset = 0;
         int length = output.length;
         try {
             inflater.setInput(input, 0, inputLength);
             while (!(inflater.finished() || inflater.needsDictionary() ||
-                    inflater.needsInput())){
+                    inflater.needsInput())) {
                 try {
                     int count = inflater.inflate(output, offset, length - offset);
                     offset += count;
-                } catch (DataFormatException dfe){
+                } catch (DataFormatException dfe) {
                     throw new IOException("Bad compression data", dfe);
                 }
             }

@@ -10,7 +10,7 @@ import com.huawei.boostkit.spark.vectorized.SplitResult;
 public class SparkJniWrapper {
 
     public SparkJniWrapper() {
-        NativelLoader.getInstance();
+        NativeLoader.getInstance();
     }
 
     public long make(PartitionInfo part,
@@ -21,7 +21,7 @@ public class SparkJniWrapper {
                      String localDirs,
                      long shuffleCompressBlockSize,
                      int shuffleSpillBatchRowNum,
-                     long shuffleSpillMemoryThreshold){
+                     long shuffleSpillMemoryThreshold) {
         return nativeMake(
                 part.getPartitionName(),
                 part.getPartitionNum(),
@@ -45,7 +45,7 @@ public class SparkJniWrapper {
             int bufferSize,
             String codec,
             String dataFile,
-            int subDircPerLocalDir,
+            int subDirsPerLocalDir,
             String localDirs,
             long shuffleCompressBlockSize,
             int shuffleSpillBatchRowNum,
@@ -59,7 +59,7 @@ public class SparkJniWrapper {
      *
      * @param nativeVectorBath Addresses of nativeVectorBatch
      */
-    public native void split(long splitterId, long nativeVectorBath);
+    public native void split(long splitterId, long nativeVectorBatch);
 
     /**
      * Write the data remained in the buffers hold by native splitter to each partition's temporary
